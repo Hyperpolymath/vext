@@ -1,0 +1,130 @@
+# AI Training Policy
+# https://site.spawning.ai/ai-txt
+
+# Overview
+# This file declares our preferences for AI training and data collection.
+
+# AI Training
+ai-training: allowed
+
+# Rationale
+# We ALLOW AI training on vext for the following reasons:
+# 1. Educational Value: Help developers learn IRC notification patterns
+# 2. Code Quality: Improve AI coding assistants' understanding of network protocols
+# 3. Open Source Spirit: Our MIT/AGPL dual license supports broad use
+# 4. Innovation: Enable AI-assisted IRC tools and integrations
+# 5. Accessibility: Help AI improve developer tooling accessibility
+
+# Conditions
+# If you use vext content for AI training:
+# - Attribute source as "vext by Hyperpolymath"
+# - Respect our dual license (MIT OR AGPL-3.0-or-later)
+# - Do not train on security-sensitive data (if any exists)
+# - Do not claim AI-generated code is endorsed by vext maintainers
+# - Follow our Code of Conduct for AI-generated contributions
+
+# License Compliance
+# AI training must comply with our Palimpsest Dual License:
+# - Option 1: MIT License (permissive, commercial-friendly)
+# - Option 2: AGPL-3.0-or-later (copyleft, network protective)
+# See LICENSE file for full terms.
+
+# What Can Be Used for Training
+# ✅ Allowed:
+# - Documentation (README, guides, tutorials)
+# - Code examples and patterns
+# - Configuration templates
+# - Test cases and fixtures
+# - Public commit messages and discussions
+# - Architecture diagrams and explanations
+
+# ❌ Restricted:
+# - Private security discussions
+# - Unreleased vulnerability details
+# - Personal information (emails, addresses)
+# - Credentials, tokens, or secrets (none should exist)
+# - Code of Conduct violation reports
+
+# AI-Generated Contributions
+# We accept AI-generated contributions under these conditions:
+# 1. Disclose AI tool use in PR description
+# 2. Human review and understanding required
+# 3. Contributor takes full responsibility
+# 4. Must pass all tests and reviews
+# 5. License compatibility verified
+# 6. No undisclosed training on proprietary data
+
+# Commercial AI Services
+# Commercial AI training (e.g., GPT, Claude, Copilot, Bard) is allowed.
+# We encourage:
+# - Transparent attribution
+# - Compliance with our licenses
+# - Respect for contributor copyrights
+# - No misrepresentation of provenance
+
+# Research Use
+# Academic and research use of vext for AI training is explicitly encouraged.
+# Please cite as:
+# ```
+# vext: Rhodium Standard Edition of irker
+# Hyperpolymath Organization
+# https://github.com/Hyperpolymath/vext
+# License: MIT OR AGPL-3.0-or-later
+# ```
+
+# Data Collection
+data-collection: allowed
+
+# Data Collection Terms
+# We allow data collection for:
+# - Usage analytics (aggregated, anonymized)
+# - Performance monitoring
+# - Security threat detection
+# - Research and improvement
+
+# We do NOT collect:
+# - Personal identifiable information (PII)
+# - IRC messages or channel content
+# - User credentials or authentication tokens
+# - Private repository data
+
+# Privacy
+# See our privacy policy at:
+# https://vext.dev/privacy
+
+# Contact
+# Questions about AI training or data collection:
+# - Email: ai-policy@vext.dev
+# - General: hello@vext.dev
+# - Legal: legal@vext.dev
+
+# Opt-Out
+# Individual contributors may opt-out:
+# 1. Add `AI-TRAINING: no` to your commit messages
+# 2. Email ai-policy@vext.dev with commit hashes
+# 3. We will request exclusion from major AI providers
+
+# Changes to This Policy
+# This policy may be updated. Check:
+# - This file (.well-known/ai.txt)
+# - Git history for changes
+# - Announcements in CHANGELOG.md
+
+# Version Information
+version: 1.0
+last-updated: 2025-01-01
+next-review: 2025-07-01
+policy-url: https://github.com/Hyperpolymath/vext/blob/main/docs/policies/AI_POLICY.md
+
+# Standards Compliance
+# This file follows emerging ai.txt standards:
+# - https://site.spawning.ai/ai-txt
+# - Rhodium Standard Repository (RSR) requirements
+# - Data privacy best practices
+
+# Additional Resources
+# - LICENSE: Our dual licensing terms
+# - SECURITY.md: Security policies
+# - CONTRIBUTING.md: Contribution guidelines
+# - CODE_OF_CONDUCT.md: Community standards
+# - .well-known/humans.txt: Team attribution

@@ -1,0 +1,338 @@
+# vext - Rhodium Standard Edition
+
+## Project Overview
+
+vext (Rhodium Standard Edition) is a modernized, community-maintained fork of **irker**, the lightweight IRC notification daemon for version control systems. It provides real-time commit notifications from Git, Mercurial (Hg), and Subversion repositories to IRC channels without the overhead of join/leave connection spam.
+
+The project reimplements and improves upon the original irker daemon and hooks, emphasizing cleaner codebase architecture, improved documentation, modern Python standards, and enhanced maintainability. vext maintains full backward compatibility with irker while offering better configuration management, streamlined deployment, and extensibility for modern development workflows.
+
+## What It Does
+
+vext consists of two core components working in tandem:
+
+1. **irkerd** (the daemon): A background service that listens on TCP/UDP sockets for JSON notification requests and relays them to IRC servers and channels
+2. **irkerhook** (the integration): A repository hook script that captures commit metadata from your version control system and sends notifications to the daemon
+
+When a developer pushes commits to a repository, the configured post-commit hook automatically sends commit details (author, message, files changed) to the vext daemon, which then announces the commit to project IRC channels. The key advantage is that the daemon maintains persistent IRC connections, eliminating the costly channel join/leave cycles that occur with individual notification scripts.
+
+## Key Features
+
+- **Multi-VCS Support**: Seamless integration with Git, Mercurial, and Subversion repositories
+- **Persistent IRC Connections**: Maintains connection state to reduce join/leave spam and improve responsiveness
+- **Flexible Communication**: Supports TCP, UDP, and email-based notifications
+- **JSON Protocol**: Simple, language-agnostic JSON-based notification format
+- **Color Formatting**: Optional mIRC and ANSI color code support for enhanced IRC visibility
+- **Lightweight & Efficient**: Minimal resource footprint suitable for forge sites and development hubs
+- **Decentralized**: No single point of failure; each repository/forge maintains its own irker instance
+- **Configuration Management**: Environment variable and config file support for flexible deployments
+- **Multiple Channel Support**: Route notifications from a single commit to multiple IRC channels
+- **Extensible**: Hook system allows customization of notification format and routing logic
+
+## Technology Stack
+
+- **Language**: Python 2.7+ and Python 3.4+
+- **Architecture**: Multithreaded daemon with socket listener
+- **Dependencies**:
+  - Python standard library (socket, json, threading, subprocess, etc.)
+  - Optional: IRC protocol support libraries (built-in)
+- **License**: Eclipse Public License 2.0 (inherited from irker)
+- **Deployment**: Designed for Unix/Linux systems with systemd support
+
+## Installation Requirements
+
+### Prerequisites
+
+- Python 2.7+ or Python 3.4+ (Python 3.6+ recommended for modern distributions)
+- Git, Mercurial, and/or Subversion (depending on VCS integration needs)
+- Access to run systemd services or daemon processes
+- Network access to IRC server(s)
+- Basic Unix/Linux administration knowledge
+
+### System Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Hyperpolymath/vext.git
+cd vext
+
+# Install the daemon and hooks
+sudo python setup.py install
+
+# Create irker system user (recommended for security)
+sudo useradd -r -s /bin/false irker
+
+# Configure systemd service
+sudo cp vext.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable vext
+sudo systemctl start vext
+```
+
+### Per-Repository Installation
+
+```bash
+# Install git hook
+cp irkerhook.py /path/to/repo/.git/hooks/post-receive
+chmod +x /path/to/repo/.git/hooks/post-receive
+
+# For Mercurial repositories
+cp irkerhook.py /path/to/repo/.hg/hooks/
+echo "post-receive = python /path/to/repo/.hg/hooks/irkerhook.py" >> /path/to/repo/.hg/hgrc
+
+# For Subversion repositories
+cp irkerhook.py /path/to/repo/hooks/
+chmod +x /path/to/repo/hooks/post-commit
+```
+
+## Basic Usage
+
+### Starting the Daemon
+
+```bash
+# Start vext daemon (default: listen on localhost:6659)
+irkerd
+
+# Start with custom port
+irkerd --listen 0.0.0.0 --port 6659
+
+# Run in foreground with debug output
+irkerd --foreground --debug
+```
+
+### Configuring Repository Hooks
+
+Create a `.irkerd.rc` file in your repository or configure via environment variables:
+
+```bash
+# Basic configuration
+export IRKERD_HOST=localhost
+export IRKERD_PORT=6659
+export IRKERD_CHANNEL=irc://irc.libera.chat/mychannel
+```
+
+### Sending Notifications Manually
+
+```bash
+# Send a notification via TCP
+echo '{"to":"irc://irc.libera.chat#mychannel", "privmsg":"Test message from vext"}' | \
+  nc localhost 6659
+
+# Send a notification via UDP
+echo '{"to":"irc://irc.libera.chat#mychannel", "privmsg":"Test via UDP"}' | \
+  nc -u localhost 6659
+```
+
+### Example Hook Configuration
+
+For a Git repository with multiple channels:
+
+```python
+#!/usr/bin/env python
+# .git/hooks/post-receive
+
+import sys
+from irkerhook import IRKNotifier
+
+notifier = IRKNotifier(
+    server='irc.libera.chat',
+    channels=['#commits', '#notifications'],
+    host='localhost',
+    port=6659,
+    use_tcp=False  # Use UDP for efficiency
+)
+
+# Read from stdin and process commits
+while True:
+    line = sys.stdin.readline()
+    if not line:
+        break
+
+    # Parse and send notifications for each commit
+    notifier.send_commit_notification(line)
+```
+
+### Full Example Workflow
+
+```bash
+# 1. Start the daemon on your server
+ssh user@devserver
+irkerd --listen 0.0.0.0 --port 6659 &
+
+# 2. Configure your Git repository
+cd /path/to/myproject.git
+cat > hooks/post-receive << 'EOF'
+#!/usr/bin/env python
+import os, sys, json
+from subprocess import check_output
+
+# Get commit information
+old, new, ref = sys.stdin.readline().split()
+commit_info = check_output(['git', 'rev-list', '%s..%s' % (old, new)])
+
+# Send to vext daemon
+for commit in commit_info.strip().split('\n'):
+    msg = check_output(['git', 'log', '--format=%s', '-n1', commit]).strip()
+    author = check_output(['git', 'log', '--format=%an', '-n1', commit]).strip()
+
+    notification = {
+        "to": "irc://irc.libera.chat#myproject-commits",
+        "privmsg": f"[{commit[:7]}] {author}: {msg}"
+    }
+
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(json.dumps(notification).encode(), ('localhost', 6659))
+EOF
+
+chmod +x hooks/post-receive
+
+# 3. Test the integration
+cd /tmp
+git clone /path/to/myproject.git test-clone
+cd test-clone
+echo "test" > testfile.txt
+git add testfile.txt
+git commit -m "Test commit from vext"
+git push origin master
+
+# Watch notifications arrive in your IRC channel!
+```
+
+## Architecture & Design
+
+### Daemon-Centric Design
+
+Unlike CI systems that spawn new processes for each notification, vext uses a single long-running daemon that maintains persistent connections. This approach:
+
+- Reduces resource consumption
+- Eliminates join/leave spam
+- Enables connection pooling and rate limiting
+- Simplifies logging and monitoring
+
+### JSON-Based Protocol
+
+The notification protocol uses simple JSON objects:
+
+```json
+{
+  "to": "irc://server.net#channel",
+  "privmsg": "Your message here",
+  "nick": "notifier-bot",
+  "userinfo": "optional@user.info"
+}
+```
+
+Supported "to" destinations:
+- `irc://irc.server.net/channel` - IRC channel
+- `irc://irc.server.net/nick` - IRC direct message
+- Multiple destinations can be specified as a list
+
+### Component Architecture
+
+```
+Repository Hook (irkerhook.py)
+    ↓
+JSON Notification
+    ↓ (TCP/UDP/Email)
+Daemon Listener (irkerd)
+    ↓
+IRC Connection Pool
+    ↓
+IRC Servers & Channels
+```
+
+## Configuration
+
+### Environment Variables
+
+- `IRKERD_HOST`: Daemon listener address (default: localhost)
+- `IRKERD_PORT`: Daemon listener port (default: 6659)
+- `IRKERD_CHANNELS`: Comma-separated list of IRC channels
+- `IRKERD_NICK`: Bot nickname in IRC (default: irker)
+- `IRKERD_USE_TCP`: Use TCP instead of UDP (default: false)
+- `IRKERD_EMAIL_ADDR`: Enable email mode with this address
+- `IRKERD_COLOR_MODE`: "mIRC", "ANSI", or "none" (default: none)
+
+### Configuration File
+
+Create `/etc/vext/vext.conf`:
+
+```ini
+[daemon]
+listen = 0.0.0.0
+port = 6659
+pidfile = /var/run/vext.pid
+logfile = /var/log/vext/vext.log
+loglevel = INFO
+user = irker
+group = irker
+
+[irc]
+nick = vext-notifier
+realname = vext Notification System
+timeout = 120
+
+[security]
+flood_limit = 1000
+rate_limit = 2
+```
+
+## Use Cases
+
+- **Development Team Coordination**: Keep project teams informed of repository activity in real-time
+- **Continuous Integration Integration**: Trigger notifications on commits for CI pipelines
+- **Project Visibility**: Announce public project milestones and releases to community channels
+- **Multi-Team Awareness**: Route commits from multiple repositories to dedicated channels
+- **Legacy Integration**: Maintain IRC-based workflows without updating to modern chat systems
+
+## Advantages Over Alternatives
+
+- **vs. Individual Hook Scripts**: Single daemon eliminates join/leave spam and reduces resource usage
+- **vs. Centralized Services** (like CIA): Self-hosted, no external dependencies or single points of failure
+- **vs. Modern Chat Tools** (Slack, Discord): Works with existing IRC infrastructure, minimal overhead
+- **vs. Email Notifications**: Real-time notifications without cluttering inboxes
+
+## Troubleshooting
+
+### Common Issues
+
+**Notifications not arriving:**
+- Verify daemon is running: `ps aux | grep irkerd`
+- Check daemon is listening: `netstat -ln | grep 6659`
+- Verify hook script has correct permissions: `ls -l .git/hooks/post-receive`
+- Check firewall rules for IRC server access
+
+**High memory usage:**
+- Configure rate limiting in daemon configuration
+- Reduce number of monitored channels
+- Monitor daemon with: `top -p $(pgrep -f irkerd)`
+
+**IRC connection issues:**
+- Verify IRC server address and port
+- Check network connectivity: `telnet irc.server.net 6667`
+- Review daemon logs for SSL/TLS errors
+
+## Getting Help
+
+- Check man pages: `man irkerd`, `man irkerhook`
+- Review project issues on GitHub: https://github.com/Hyperpolymath/vext/issues
+- Consult original irker documentation: http://www.catb.org/~esr/irker/
+
+## Contributing
+
+vext welcomes contributions in the form of:
+- Bug reports and fixes
+- Documentation improvements
+- New VCS system integrations
+- Performance optimizations
+- Test coverage expansion
+
+Please follow the project's contribution guidelines and submit pull requests to the main repository.
+
+## License
+
+vext is released under the **Eclipse Public License 2.0**, inheriting the license from the original irker project by Eric S. Raymond.
+
+## Project Status
+
+vext is actively maintained and ready for production use. The Rhodium Standard Edition represents a stabilized, well-documented branch focused on reliability and ease of deployment for modern teams while maintaining the simplicity and efficiency of the original irker design.
