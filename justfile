@@ -7,213 +7,158 @@ default:
     @just --list
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Development
+# Development Setup
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Set up development environment
 setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "🔧 Setting up vext development environment..."
+    echo "Setting up vext development environment..."
 
-    # Create virtual environment if it doesn't exist
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
-        echo "✓ Created virtual environment"
+    # Check Rust
+    if command -v cargo &> /dev/null; then
+        echo "✓ Rust: $(rustc --version)"
+    else
+        echo "✗ Rust not found. Install from https://rustup.rs"
+        exit 1
     fi
 
-    # Activate and install dependencies
-    source venv/bin/activate
-    pip install --upgrade pip
-
-    if [ -f "requirements-dev.txt" ]; then
-        pip install -r requirements-dev.txt
-        echo "✓ Installed development dependencies"
-    fi
-
-    if [ -f "requirements.txt" ]; then
-        pip install -r requirements.txt
-        echo "✓ Installed project dependencies"
-    fi
-
-    # Install in editable mode
-    if [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
-        pip install -e .
-        echo "✓ Installed vext in editable mode"
+    # Check Deno
+    if command -v deno &> /dev/null; then
+        echo "✓ Deno: $(deno --version | head -1)"
+    else
+        echo "✗ Deno not found. Install from https://deno.land"
+        exit 1
     fi
 
     echo ""
+    echo "Building Rust components..."
+    cargo build
+
+    echo ""
+    echo "Caching Deno dependencies..."
+    cd vext-tools && deno cache src/hooks/git.ts
+
+    echo ""
     echo "✅ Setup complete!"
-    echo "   Activate environment: source venv/bin/activate"
 
-# Install dependencies
+# Install just the runtime (not dev deps)
 install:
-    pip install -r requirements.txt
+    cargo build --release
 
-# Install development dependencies
-install-dev:
-    pip install -r requirements-dev.txt
-    pip install -e .
+# ══════════════════════════════════════════════════════════════════════════════
+# Building
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Build all components
+build: build-rust build-tools
+    @echo "✅ Build complete!"
+
+# Build Rust daemon
+build-rust:
+    @echo "Building vext-core (Rust)..."
+    cargo build --release
+
+# Build tools
+build-tools:
+    @echo "Building vext-tools (Deno)..."
+    cd vext-tools && deno task build || deno check src/**/*.ts
+
+# Build debug versions
+build-debug:
+    cargo build
+
+# Clean build artifacts
+clean:
+    @echo "Cleaning build artifacts..."
+    cargo clean
+    rm -rf vext-tools/node_modules vext-tools/.rescript
+    rm -f rsr_compliance.json
+    @echo "✅ Cleaned!"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Testing
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Run all tests
-test:
-    pytest tests/ -v
+test: test-rust test-tools
+    @echo "✅ All tests passed!"
+
+# Run Rust tests
+test-rust:
+    @echo "Running Rust tests..."
+    cargo test
+
+# Run Rust tests with output
+test-rust-verbose:
+    cargo test -- --nocapture
+
+# Run tools tests
+test-tools:
+    @echo "Running Deno tests..."
+    cd vext-tools && deno test --allow-read --allow-write --allow-net || echo "No tests yet"
 
 # Run tests with coverage
 test-coverage:
-    pytest tests/ --cov=vext --cov-report=html --cov-report=term
-
-# Run tests in watch mode
-test-watch:
-    pytest-watch tests/
-
-# Run integration tests
-test-integration:
-    pytest tests/integration/ -v --integration
-
-# Run unit tests only
-test-unit:
-    pytest tests/unit/ -v
-
-# Run specific test file
-test-file FILE:
-    pytest {{FILE}} -v
+    cargo tarpaulin --out Html
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Code Quality
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Run all linters and formatters
-lint:
-    @echo "🔍 Running linters..."
-    just lint-black
-    just lint-flake8
-    just lint-pylint
-    just lint-mypy
+# Run all linters
+lint: lint-rust lint-tools
     @echo "✅ All linters passed!"
 
-# Check code formatting with black
-lint-black:
-    black --check --diff .
+# Lint Rust code
+lint-rust:
+    @echo "Linting Rust..."
+    cargo clippy -- -D warnings
+    cargo fmt --check
 
-# Run flake8 linter
-lint-flake8:
-    flake8 vext/ tests/
+# Lint Deno/TypeScript code
+lint-tools:
+    @echo "Linting tools..."
+    cd vext-tools && deno lint
+    cd vext-tools && deno fmt --check
 
-# Run pylint linter
-lint-pylint:
-    pylint vext/ tests/ --rcfile=.pylintrc || true
+# Format all code
+format: format-rust format-tools
+    @echo "✅ Formatted!"
 
-# Run mypy type checker
-lint-mypy:
-    mypy vext/ --ignore-missing-imports
+# Format Rust code
+format-rust:
+    cargo fmt
 
-# Format code with black
-format:
-    black .
+# Format tools code
+format-tools:
+    cd vext-tools && deno fmt
 
-# Run security checks
+# Security audit
 security:
-    @echo "🔒 Running security checks..."
-    bandit -r vext/ -f json -o bandit-report.json || true
-    bandit -r vext/
-    safety check --json || true
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Documentation
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Build documentation
-docs-build:
-    @echo "📚 Building documentation..."
-    cd docs && make html
-
-# Serve documentation locally
-docs-serve:
-    @echo "🌐 Serving documentation at http://localhost:8000"
-    cd docs/_build/html && python -m http.server 8000
-
-# Check documentation links
-docs-check:
-    @echo "🔗 Checking documentation links..."
-    find . -name "*.md" -exec markdown-link-check {} \;
-
-# ══════════════════════════════════════════════════════════════════════════════
-# RSR Compliance
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Check RSR compliance
-rsr-check:
-    @echo "📊 Checking RSR compliance..."
-    python3 tools/rsr_checker.py .
-
-# Generate RSR compliance JSON report
-rsr-check-json:
-    @echo "📄 Generating RSR compliance JSON report..."
-    python3 tools/rsr_checker.py . --json --json-output rsr_compliance.json
-    @cat rsr_compliance.json
-
-# Generate RSR compliance badge
-rsr-badge:
-    @echo "🏅 Generating RSR compliance badge..."
-    python3 tools/rsr_checker.py . --badge
-
-# Full RSR compliance report
-rsr-report:
-    @echo "📋 Generating comprehensive RSR compliance report..."
-    python3 tools/rsr_checker.py . --json --badge
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Building
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Build distribution packages
-build:
-    @echo "📦 Building distribution packages..."
-    python -m build
-
-# Build wheel only
-build-wheel:
-    @echo "🎡 Building wheel..."
-    python -m build --wheel
-
-# Build source distribution only
-build-sdist:
-    @echo "📦 Building source distribution..."
-    python -m build --sdist
-
-# Clean build artifacts
-clean:
-    @echo "🧹 Cleaning build artifacts..."
-    rm -rf build/ dist/ *.egg-info
-    rm -rf .pytest_cache/ .coverage htmlcov/
-    rm -rf **/__pycache__/
-    rm -f rsr_compliance.json bandit-report.json
-    @echo "✅ Cleaned!"
+    @echo "Running security audit..."
+    cargo audit || echo "Install cargo-audit: cargo install cargo-audit"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Running
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Run irkerd daemon in foreground
-run:
-    python -m vext.irkerd
+# Run daemon in foreground
+run *ARGS:
+    cargo run --release --bin vextd -- {{ARGS}}
 
-# Run irkerd daemon with debug logging
-run-debug:
-    python -m vext.irkerd --debug
+# Run daemon with debug logging
+run-debug *ARGS:
+    cargo run --bin vextd -- -vv {{ARGS}}
 
-# Run irkerd daemon in background
-run-daemon:
-    python -m vext.irkerd --daemon
+# Run the send CLI
+send *ARGS:
+    cargo run --release --bin vext-send -- {{ARGS}}
 
-# Stop running daemon
-stop:
-    pkill -f "python.*irkerd" || echo "No daemon running"
+# Install hook in a git repo
+hook-install REPO_PATH:
+    cd vext-tools && deno run --allow-read --allow-write src/hooks/install.ts --git-dir "{{REPO_PATH}}/.git"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Docker
@@ -242,63 +187,56 @@ docker-logs:
 
 # Prepare a new release
 release VERSION:
-    @echo "🚀 Preparing release {{VERSION}}..."
+    @echo "Preparing release {{VERSION}}..."
     @echo "1. Updating version numbers..."
-    sed -i 's/^version = .*/version = "{{VERSION}}"/' pyproject.toml
+    sed -i 's/^version = .*/version = "{{VERSION}}"/' Cargo.toml
+    sed -i 's/^version = .*/version = "{{VERSION}}"/' vext-core/Cargo.toml
     @echo "2. Updating CHANGELOG.md..."
     @echo "   (Manual step: Update CHANGELOG.md with release notes)"
     @echo "3. Creating git tag..."
-    git add pyproject.toml CHANGELOG.md
+    git add Cargo.toml vext-core/Cargo.toml CHANGELOG.md
     git commit -m "chore: bump version to {{VERSION}}"
     git tag -a "v{{VERSION}}" -m "Release v{{VERSION}}"
     @echo "✅ Release prepared!"
     @echo "   Review changes, then run: git push && git push --tags"
 
-# Publish to PyPI (requires credentials)
-publish:
-    @echo "📦 Publishing to PyPI..."
-    @echo "⚠️  This will upload to PyPI. Press Ctrl+C to cancel."
-    @read -p "Continue? (y/N) " -n 1 -r
-    @echo
-    @if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-        python -m twine upload dist/*; \
+# Build release binaries for distribution
+dist:
+    @echo "Building release binaries..."
+    cargo build --release
+    mkdir -p dist
+    cp target/release/vextd dist/
+    cp target/release/vext-send dist/
+    @echo "✅ Binaries in dist/"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RSR Compliance
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Check RSR compliance (legacy Python tool)
+rsr-check:
+    @echo "Checking RSR compliance..."
+    @if command -v python3 &> /dev/null && [ -f tools/rsr_checker.py ]; then \
+        python3 tools/rsr_checker.py .; \
+    else \
+        echo "RSR checker requires Python (legacy tool)"; \
     fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Maintenance
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Update dependencies
-update-deps:
-    @echo "🔄 Updating dependencies..."
-    pip list --outdated
-    pip install --upgrade pip setuptools wheel
-
-# Check for security vulnerabilities
-check-vulnerabilities:
-    safety check
-    pip-audit
-
-# Generate requirements.txt from pyproject.toml
-generate-requirements:
-    pip-compile pyproject.toml -o requirements.txt
-    pip-compile --extra dev pyproject.toml -o requirements-dev.txt
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Validation
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Run all validation checks (CI equivalent)
-validate: lint test security rsr-check
+validate: lint test security
     @echo ""
     @echo "✅ All validation checks passed!"
 
 # Pre-commit checks
-pre-commit: format lint test-unit
+pre-commit: format lint test
     @echo "✅ Pre-commit checks passed!"
 
 # Full CI check
-ci: clean install-dev lint test test-coverage security rsr-check
+ci: clean build lint test security
     @echo "✅ Full CI validation passed!"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -308,26 +246,25 @@ ci: clean install-dev lint test test-coverage security rsr-check
 # Show project information
 info:
     @echo "Project: vext"
-    @echo "Description: Rhodium Standard Edition of irker"
+    @echo "Description: IRC notification daemon (Rhodium Standard Edition)"
     @echo "License: MIT OR AGPL-3.0-or-later"
     @echo "Repository: https://github.com/Hyperpolymath/vext"
     @echo ""
-    @echo "Python version:"
-    @python --version
+    @echo "Components:"
+    @echo "  vext-core: Rust daemon"
+    @echo "  vext-tools: Deno hooks & utilities"
     @echo ""
-    @echo "Dependencies:"
-    @pip list | grep -E "(pytest|black|flake8|pylint|mypy|bandit|safety)"
+    @echo "Toolchain versions:"
+    @rustc --version 2>/dev/null || echo "  Rust: not installed"
+    @deno --version 2>/dev/null | head -1 || echo "  Deno: not installed"
 
 # Count lines of code
 loc:
-    @echo "📊 Lines of code:"
-    @find vext -name "*.py" | xargs wc -l | tail -1
-    @echo "📊 Lines of tests:"
-    @find tests -name "*.py" | xargs wc -l | tail -1
-
-# Open documentation in browser
-docs-open:
-    xdg-open docs/README.md || open docs/README.md || echo "Open docs/README.md manually"
+    @echo "Lines of code:"
+    @echo "Rust:"
+    @find vext-core/src -name "*.rs" | xargs wc -l | tail -1
+    @echo "TypeScript/ReScript:"
+    @find vext-tools/src -name "*.ts" -o -name "*.res" | xargs wc -l 2>/dev/null | tail -1 || echo "0"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Nix Integration

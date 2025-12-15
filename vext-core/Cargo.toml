@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: MIT OR AGPL-3.0-or-later
+# vext-core - Rust IRC notification daemon
+# Rhodium Standard Edition
+
+[package]
+name = "vext-core"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Vext Contributors"]
+license = "MIT OR AGPL-3.0-or-later"
+description = "High-performance IRC notification daemon for version control systems"
+repository = "https://github.com/Hyperpolymath/vext"
+keywords = ["irc", "git", "notifications", "ci", "devops"]
+categories = ["development-tools", "network-programming"]
+readme = "../README.adoc"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# IRC protocol
+irc = "0.15"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Configuration
+toml = "0.8"
+dirs = "5.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# TLS support
+native-tls = "0.2"
+tokio-native-tls = "0.3"
+
+# DNS resolution (SRV records)
+trust-dns-resolver = "0.23"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.9"
+mockall = "0.12"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[[bin]]
+name = "vextd"
+path = "src/main.rs"
+
+[[bin]]
+name = "vext-send"
+path = "src/bin/send.rs"

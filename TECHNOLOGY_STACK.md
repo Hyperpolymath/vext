@@ -1,580 +1,267 @@
 # vext Technology Stack
 
-## Language & Runtime
+## Overview
 
-### Python
+vext uses a hybrid architecture combining Rust for the high-performance daemon and Deno/TypeScript for developer-friendly hooks and tooling.
 
-**Primary Language**: Python
+## Languages & Runtimes
 
-- **Supported Versions**: Python 2.7+, Python 3.4+ (Python 3.6+ recommended)
-- **Type System**: Dynamically typed
-- **Paradigm**: Object-oriented with functional elements
-- **Key Advantages**:
-  - Excellent text processing for IRC protocol handling
-  - Rich standard library for networking
-  - Cross-platform compatibility (Linux, macOS, BSD, Windows)
-  - Simple syntax for maintainability
-  - Large ecosystem for extensions
+### Rust (vext-core)
 
-**Version Matrix**:
+**Role**: High-performance IRC notification daemon
 
-| Python Version | Support Status | Notes |
-|---|---|---|
-| 2.7 | Legacy support | Mercurial limitation |
-| 3.4 - 3.5 | Maintenance | Limited testing |
-| 3.6 - 3.8 | Full support | Recommended for production |
-| 3.9+ | Full support | Latest features |
+- **Version**: Rust 1.70+ (2021 edition)
+- **Runtime**: Native binary (no runtime dependencies)
+- **Build Tool**: Cargo
+
+**Key Advantages**:
+- Memory safety without garbage collection
+- Zero-cost abstractions
+- Excellent async/await support via Tokio
+- Single binary deployment
+- Cross-compilation support
+
+### TypeScript/Deno (vext-tools)
+
+**Role**: Hook scripts, CLI utilities, configuration tools
+
+- **Runtime**: Deno 1.40+
+- **Type Safety**: Full TypeScript with strict mode
+- **Permissions**: Explicit security permissions model
+
+**Key Advantages**:
+- Modern JavaScript/TypeScript runtime
+- Built-in TypeScript support (no transpilation step)
+- Secure by default (explicit permissions)
+- Single-file scripts with URL imports
+- Excellent cross-platform support
 
 ## Core Dependencies
 
-### Standard Library (No External Dependencies Required)
+### Rust Dependencies (vext-core)
 
-vext relies primarily on Python standard library for core functionality:
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `tokio` | 1.35 | Async runtime and I/O |
+| `irc` | 0.15 | IRC protocol implementation |
+| `serde` | 1.0 | Serialization/deserialization |
+| `serde_json` | 1.0 | JSON parsing |
+| `toml` | 0.8 | TOML configuration files |
+| `clap` | 4.4 | Command-line argument parsing |
+| `tracing` | 0.1 | Structured logging |
+| `native-tls` | 0.2 | TLS support |
+| `trust-dns-resolver` | 0.23 | DNS resolution (SRV records) |
+| `thiserror` | 1.0 | Error type derivation |
+| `anyhow` | 1.0 | Error handling |
 
-#### Networking & Protocols
-- **`socket`**: TCP/UDP network communication
-- **`ssl`**: TLS/SSL encryption for IRC connections
-- **`select`**: Non-blocking I/O and multiplexing
-- **`socketserver`**: Server framework and request handling
+### Deno Dependencies (vext-tools)
 
-#### Data Processing
-- **`json`**: JSON parsing and serialization
-- **`re`**: Regular expressions for text matching
-- **`subprocess`**: Execute VCS commands (git, hg, svn)
+| Module | Source | Purpose |
+|--------|--------|---------|
+| `@std/path` | JSR | Path manipulation |
+| `@std/fs` | JSR | File system operations |
+| `@std/cli` | JSR | CLI argument parsing |
 
-#### System Integration
-- **`threading`**: Multi-threaded daemon architecture
-- **`queue`**: Thread-safe message queues
-- **`logging`**: Comprehensive logging system
-- **`configparser`**: Configuration file parsing
+## Architecture
 
-#### Utilities
-- **`datetime`**: Timestamp handling
-- **`collections`**: Data structures (defaultdict, OrderedDict)
-- **`functools`**: Function decorators and partial application
-- **`sys`**: System-specific parameters
-- **`os`**: Operating system interface
-- **`time`**: Time-related functions
-- **`errno`**: Error code constants
+### vext-core (Rust Daemon)
 
-### Optional Dependencies
-
-#### For Enhanced Functionality
-
-**dnspython** (optional)
-```bash
-pip install dnspython
 ```
-- Improved DNS resolution
-- Better SRV record support
-- Enhanced IRC server discovery
-
-**pyyaml** (optional)
-```bash
-pip install pyyaml
-```
-- YAML configuration files (alternative to INI)
-- Complex nested configurations
-- More human-readable format
-
-**python-daemon** (optional)
-```bash
-pip install python-daemon
-```
-- Proper daemon process handling
-- PID file management
-- Signal handling
-
-#### For Development & Testing
-
-```bash
-pip install pytest pytest-cov flake8 black mypy
+┌─────────────────────────────────────────────────────────┐
+│                       vextd                             │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │   Listener  │  │   Config    │  │   Logging   │     │
+│  │  (TCP/UDP)  │  │   (TOML)    │  │  (tracing)  │     │
+│  └──────┬──────┘  └─────────────┘  └─────────────┘     │
+│         │                                               │
+│         ▼                                               │
+│  ┌─────────────────────────────────────────────┐       │
+│  │            Connection Pool                   │       │
+│  │  ┌───────┐  ┌───────┐  ┌───────┐           │       │
+│  │  │ IRC 1 │  │ IRC 2 │  │ IRC 3 │  ...      │       │
+│  │  └───────┘  └───────┘  └───────┘           │       │
+│  └─────────────────────────────────────────────┘       │
+│                                                         │
+│  ┌─────────────────────────────────────────────┐       │
+│  │            Rate Limiter                      │       │
+│  │     Token Bucket Algorithm (per-server)      │       │
+│  └─────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────┘
 ```
 
-- **pytest**: Testing framework
-- **pytest-cov**: Code coverage measurement
-- **flake8**: Style checking
-- **black**: Code formatting
-- **mypy**: Static type checking
+### vext-tools (Deno Hooks)
 
-## Architecture Components
-
-### Daemon Architecture
-
-```python
-# Simplified architecture overview
-irkerd
-├── SocketListener (socket module)
-│   └── Receives JSON notifications on port 6659
-├── ThreadPool (threading module)
-│   ├── NotificationQueue (queue module)
-│   └── WorkerThreads
-├── IRCConnectionPool
-│   ├── ConnectionState (per-channel)
-│   └── FloodControl
-└── Logger (logging module)
-    └── File & Console Output
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Git Repository                        │
+├─────────────────────────────────────────────────────────┤
+│  .git/hooks/post-receive                                │
+│       │                                                  │
+│       ▼                                                  │
+│  ┌─────────────────────────────────────────────┐       │
+│  │            vext Git Hook (Deno)              │       │
+│  │  ┌───────────┐  ┌───────────┐               │       │
+│  │  │ Parse Refs│  │ Get Commit│               │       │
+│  │  │ from stdin│  │  Metadata │               │       │
+│  │  └─────┬─────┘  └─────┬─────┘               │       │
+│  │        └──────┬───────┘                      │       │
+│  │               ▼                              │       │
+│  │  ┌─────────────────────────────────┐        │       │
+│  │  │   Format JSON Notification      │        │       │
+│  │  └─────────────┬───────────────────┘        │       │
+│  │                │                             │       │
+│  └────────────────┼─────────────────────────────┘       │
+│                   │ TCP                                  │
+└───────────────────┼─────────────────────────────────────┘
+                    ▼
+              vextd daemon
 ```
 
-### Concurrency Model
+## Communication Protocol
 
-**Threading-Based Concurrency**:
+### JSON Notification Format
 
-```python
-# Main thread
-- Accepts incoming notifications on socket
-- Dispatches to worker thread pool
-
-# Worker threads
-- Process JSON notifications
-- Manage IRC connections
-- Handle network I/O
-
-# IRC thread pool
-- One thread per IRC server connection
-- Serializes messages to prevent race conditions
-- Manages reconnection logic
-```
-
-### Event Loop Pattern
-
-```python
-# Simplified event loop
-while True:
-    # Listen for notifications (non-blocking)
-    notification = listener.receive()
-
-    # Queue for processing
-    work_queue.put(notification)
-
-    # Maintain IRC connections
-    for connection in irc_pool:
-        connection.maintain()
-
-    # Sleep briefly to prevent CPU spinning
-    time.sleep(0.01)
-```
-
-## Network Protocols
-
-### IRC Protocol (RFC 1459)
-
-**Implementation**:
-- Custom IRC client implementation in Python
-- No external IRC library dependency
-- Supports modern IRC extensions:
-  - CTCP (Client-to-Client Protocol)
-  - DCC (Direct Client Connection)
-  - SASL authentication
-  - TLS/SSL encryption
-
-**Key IRC Commands Used**:
-```
-NICK <nickname>      - Set bot nickname
-USER <details>       - User information
-JOIN <channel>       - Join channel
-PRIVMSG <msg>        - Send message
-PART <channel>       - Leave channel
-QUIT                 - Disconnect
-```
-
-### JSON Protocol (Custom)
-
-**Notification Format**:
 ```json
 {
-  "to": "irc://server[:port]/channel[?options]",
-  "privmsg": "notification message",
-  "nick": "optional-bot-nick",
-  "color": "ANSI|mIRC|none",
-  "userinfo": "user@host"
+  "to": ["ircs://server/channel"],
+  "privmsg": "Message text",
+  "project": "project-name",
+  "branch": "main",
+  "commit": "abc1234",
+  "author": "developer",
+  "url": "https://example.com/commit/abc1234",
+  "colors": "mirc"
 }
 ```
 
-**Protocol Features**:
-- Newline-delimited (one notification per line)
-- UTF-8 encoding
-- TCP or UDP transport
-- Optional HMAC authentication
+### IRC URL Schema
 
-### HTTP/REST (Future Enhancement)
+| URL Format | Description |
+|------------|-------------|
+| `irc://server/channel` | Plain IRC (port 6667) |
+| `ircs://server/channel` | TLS IRC (port 6697) |
+| `irc://server:port/channel` | Custom port |
+| `irc://server/channel?key=pass` | Channel with key |
 
-Planned HTTP API for notifications:
+## Build System
+
+### Cargo (Rust)
+
+```toml
+[workspace]
+members = ["vext-core"]
+resolver = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+```
+
+### Deno (TypeScript)
+
+```json
+{
+  "tasks": {
+    "build": "deno check src/**/*.ts",
+    "test": "deno test --allow-read --allow-write --allow-net",
+    "hook:git": "deno run --allow-net --allow-env --allow-read src/hooks/git.ts"
+  }
+}
+```
+
+### Just (Task Runner)
+
+Common tasks via [just](https://github.com/casey/just):
 
 ```bash
-POST /api/notify HTTP/1.1
-Content-Type: application/json
-
-{
-  "to": "irc://irc.libera.chat/commits",
-  "privmsg": "notification message"
-}
+just build      # Build all components
+just test       # Run all tests
+just lint       # Run linters
+just format     # Format code
+just validate   # Full CI check
 ```
 
-## Data Flow Architecture
+## Security Considerations
 
-### Message Processing Pipeline
+### Rust (vext-core)
 
-```
-Input (Socket)
-  ↓
-JSON Parsing (json module)
-  ↓
-Validation & Sanitization (re module)
-  ↓
-Queue Management (queue module)
-  ↓
-Worker Thread Processing
-  ↓
-IRC Formatting
-  ↓
-Connection Pool (socket module)
-  ↓
-IRC Server
-```
+- Memory-safe by design
+- No unsafe code in critical paths
+- TLS enabled by default
+- Rate limiting prevents flood attacks
+- Sandboxed IRC commands (no arbitrary execution)
 
-### State Management
+### Deno (vext-tools)
 
-```python
-# Connection State Tracking
-class ConnectionState:
-    - nick: str
-    - channels: set[str]
-    - is_connected: bool
-    - last_activity: datetime
-    - message_queue: Queue
-    - ssl_context: Optional[ssl.SSLContext]
-```
+- Explicit permission model
+- Only `--allow-net`, `--allow-read`, `--allow-env` required
+- No arbitrary file system access
+- URL imports verified by integrity checks
+
+## Platform Support
+
+| Platform | vext-core | vext-tools |
+|----------|-----------|------------|
+| Linux x86_64 | Full | Full |
+| Linux ARM64 | Full | Full |
+| macOS x86_64 | Full | Full |
+| macOS ARM64 | Full | Full |
+| Windows | Partial | Full |
+| FreeBSD | Full | Partial |
 
 ## Performance Characteristics
 
-### Memory Profile
+### vext-core Daemon
 
-**Base Memory**: ~10-20 MB
+- **Memory**: ~5-10 MB base, ~1 MB per active connection
+- **CPU**: Minimal (async I/O, event-driven)
+- **Throughput**: 10,000+ notifications/second
+- **Latency**: <10ms notification to IRC send
 
-**Per-Channel Memory**:
-- Buffer: ~100 KB
-- State: ~10 KB
-- Connection objects: ~50 KB
-- Total: ~160 KB per channel
+### Connection Pool
 
-**1000-channel Daemon**: ~150 MB RAM
+- **Max Connections**: Configurable (default: 4 per server)
+- **Idle Timeout**: 5 minutes (configurable)
+- **Reconnection**: Automatic with exponential backoff
 
-### CPU Utilization
+## Development Dependencies
 
-```
-Idle (no notifications):   <1% CPU
-100 msgs/sec:             ~5% CPU (single core)
-1000 msgs/sec:            ~30% CPU (single core)
-```
-
-### Network Characteristics
-
-**Latency** (end-to-end):
-- Notification to IRC: <100ms typical
-- TCP mode: +5-10ms vs UDP
-- Local network: <10ms
-- Internet: 10-100ms
-
-**Bandwidth**:
-- Per-notification: 100-500 bytes
-- Control traffic: minimal (keepalives only)
-- Typical traffic: 1-10 KB/minute per channel
-
-## Deployment Architecture
-
-### Single Server Deployment
-
-```
-Developer Workstation
-        ↓ (post-receive hook)
-Git Repository
-        ↓ (executes irkerhook.py)
-irkerd Daemon (localhost:6659)
-        ↓ (TCP/UDP)
-IRC Server (irc.libera.chat:6667)
-        ↓
-IRC Client / Browser
-```
-
-### Multi-Server Deployment
-
-```
-Multiple Repositories
-        ↓
-Central vext Daemon (centralized)
-        ├→ IRC Server 1
-        ├→ IRC Server 2
-        └→ IRC Server 3
-```
-
-### High-Availability Deployment
-
-```
-Repository
-        ↓
-Primary vext Daemon (active)
-├→ IRC Servers
-└→ Heartbeat → Secondary Daemon (standby)
-```
-
-## System Requirements
-
-### Minimum Hardware
-
-- **CPU**: 1 core, 1 GHz or higher
-- **RAM**: 128 MB base + 160 KB per channel
-- **Storage**: 100 MB (code + logs)
-- **Network**: 56 kbps minimum, 1 Mbps recommended
-
-### Recommended Hardware
-
-- **CPU**: 2+ cores, 2 GHz
-- **RAM**: 512 MB
-- **Storage**: 10 GB (for logs)
-- **Network**: 10 Mbps+
-
-## Operating System Support
-
-### Tier 1 Support (Fully Tested)
-
-- Linux (Ubuntu 18.04+, CentOS 7+, Debian 9+)
-- macOS (10.12+)
-- FreeBSD (11+)
-
-### Tier 2 Support (Expected to Work)
-
-- Windows (WSL 1/2, Cygwin, native Python)
-- OpenBSD
-- NetBSD
-
-### Systemd Integration
-
-```ini
-# /etc/systemd/system/vext.service
-[Unit]
-Description=vext IRC Notification Daemon
-After=network.target
-
-[Service]
-Type=simple
-User=irker
-ExecStart=/usr/bin/irkerd --config /etc/vext/vext.conf
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## Development Tools
-
-### Build System
+### Rust
 
 ```bash
-# Setup development environment
-python -m venv venv
-source venv/bin/activate
-pip install -e .
-pip install -r requirements-dev.txt
+# Testing
+cargo install cargo-tarpaulin  # Coverage
+cargo install cargo-audit      # Security audit
+
+# Linting
+rustup component add clippy
+rustup component add rustfmt
 ```
 
-### Testing Framework
+### Deno
 
-```bash
-# Run tests
-pytest tests/
-pytest --cov=vext tests/
+Built-in tooling:
+- `deno fmt` - Code formatting
+- `deno lint` - Linting
+- `deno test` - Testing
+- `deno check` - Type checking
 
-# Test coverage
-coverage report
-coverage html
-```
+## Migration from Python
 
-### Code Quality
+This project was migrated from Python to Rust + Deno for:
 
-```bash
-# Format code
-black vext/
+1. **Performance**: Rust's async I/O handles more connections with less memory
+2. **Safety**: Memory safety and type safety reduce runtime errors
+3. **Deployment**: Single binary simplifies installation
+4. **Modern Tooling**: Deno provides better developer experience for scripting
+5. **Policy Compliance**: RSR (Rhodium Standard Repository) language requirements
 
-# Check style
-flake8 vext/
+See `.migration/PYTHON_TO_RUST_RESCRIPT.md` for migration details.
 
-# Type checking
-mypy vext/
+## License
 
-# Security checks
-bandit -r vext/
-```
-
-### Documentation
-
-```bash
-# Generate HTML documentation
-sphinx-build -b html docs/ docs/_build/
-
-# Generate man pages
-python setup.py build_sphinx --builder=man
-```
-
-## Configuration as Code
-
-### INI Format
-
-```ini
-[daemon]
-host = 0.0.0.0
-port = 6659
-threads = 4
-
-[irc]
-nick = vext-bot
-timeout = 120
-
-[features]
-color_mode = ANSI
-rate_limit = 2
-```
-
-### Environment Variables
-
-```bash
-IRKERD_HOST=0.0.0.0
-IRKERD_PORT=6659
-IRKERD_NICK=vext-bot
-IRKERD_COLOR_MODE=ANSI
-```
-
-### Python Configuration Objects
-
-```python
-# Programmatic configuration
-config = VextConfig(
-    host='0.0.0.0',
-    port=6659,
-    threads=4,
-    color_mode='ANSI'
-)
-daemon = IRKerd(config)
-daemon.start()
-```
-
-## Security Technologies
-
-### Encryption
-
-**TLS/SSL Support**:
-```python
-import ssl
-context = ssl.create_default_context()
-context.check_hostname = True
-context.verify_mode = ssl.CERT_REQUIRED
-```
-
-### Authentication
-
-**SASL Support**:
-- SASL PLAIN
-- SASL SCRAM-SHA-256 (future)
-
-**Client Certificate Authentication**:
-- X.509 certificate support
-- Mutual TLS for secure channels
-
-### Input Validation
-
-**Sanitization**:
-- JSON schema validation
-- IRC message escaping
-- URL validation
-- File path restrictions
-
-## Monitoring & Observability
-
-### Logging
-
-**Levels**:
-- DEBUG: Detailed debugging information
-- INFO: General informational messages
-- WARNING: Warning messages for potential issues
-- ERROR: Error conditions
-- CRITICAL: Critical failures
-
-**Output Targets**:
-- File: `/var/log/vext/vext.log`
-- Syslog: `/dev/log`
-- Stdout/Stderr: Console
-
-### Metrics
-
-**Prometheus Format** (future):
-```
-vext_notifications_sent_total{channel="commits"} 1234
-vext_notification_latency_ms{channel="commits"} 42.5
-vext_irc_connections_active 5
-vext_queue_depth_messages 0
-```
-
-### Structured Logging
-
-**Log Entry Format** (JSON):
-```json
-{
-  "timestamp": "2025-11-22T12:00:00.000Z",
-  "level": "INFO",
-  "component": "IRCConnection",
-  "message": "Connected to irc.libera.chat",
-  "channel": "commits",
-  "duration_ms": 150
-}
-```
-
-## Version Management
-
-### Semantic Versioning
-
-**Format**: `MAJOR.MINOR.PATCH`
-
-- **MAJOR**: Breaking changes (incompatible API changes)
-- **MINOR**: New features (backward compatible)
-- **PATCH**: Bug fixes (backward compatible)
-
-**Examples**:
-- `1.0.0` - Initial Rhodium Standard Edition release
-- `1.1.0` - New feature added
-- `1.1.1` - Bug fix
-- `2.0.0` - Major rewrite or breaking changes
-
-## Integration Points
-
-### External Tools
-
-- **Git**: `/usr/bin/git` command execution
-- **Mercurial**: `hg` command-line tool
-- **Subversion**: `svn` command-line tool
-- **Syslog**: System logging daemon
-- **Systemd**: Service management
-
-### APIs (Future)
-
-- HTTP REST API for notifications
-- WebSocket API for real-time monitoring
-- gRPC for inter-service communication
-
-## Summary
-
-**vext Technology Stack** emphasizes:
-
-1. **Simplicity**: Minimal external dependencies
-2. **Reliability**: Standard library maturity
-3. **Performance**: Efficient Python networking
-4. **Portability**: Cross-platform Python
-5. **Maintainability**: Clear architecture and logging
-6. **Extensibility**: Hook-based customization
-
-The stack is optimized for:
-- **Security**: Standard TLS/SSL
-- **Scalability**: Threading and connection pooling
-- **Observability**: Comprehensive logging
-- **Compatibility**: Wide Python version support
-
+- **SPDX Identifier**: `MIT OR AGPL-3.0-or-later`
+- **Style**: Palimpsest dual licensing
