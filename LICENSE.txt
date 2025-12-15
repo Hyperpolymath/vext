@@ -1,28 +1,19 @@
 SPDX-License-Identifier: MIT OR AGPL-3.0-or-later
+SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 
-═══════════════════════════════════════════════════════════════════════════════
-PALIMPSEST DUAL LICENSE v0.8
-═══════════════════════════════════════════════════════════════════════════════
+================================================================================
+DUAL LICENSE: MIT OR AGPL-3.0-or-later
+================================================================================
 
-This software is licensed under BOTH of the following licenses. You may choose
-to use, modify, and distribute this software under EITHER license at your option.
+This project is dual-licensed under the MIT License OR the GNU Affero General
+Public License v3.0 or later. You may choose to use, copy, modify, and
+distribute this work under the terms of EITHER license (your choice).
 
-License Options:
-  1. MIT License (permissive, commercial-friendly)
-  2. GNU Affero General Public License v3.0 or later (copyleft, network protective)
+--------------------------------------------------------------------------------
+MIT LICENSE
+--------------------------------------------------------------------------------
 
-The Palimpsest Dual License Framework ensures:
-  ✓ Commercial use is explicitly permitted under MIT
-  ✓ Network service providers can choose AGPL compliance
-  ✓ Derivative works may choose either license
-  ✓ License compatibility with both permissive and copyleft ecosystems
-  ✓ Clear SPDX identifier for automated tooling
-
-═══════════════════════════════════════════════════════════════════════════════
-OPTION 1: MIT LICENSE
-═══════════════════════════════════════════════════════════════════════════════
-
-Copyright (c) 2025 vext contributors
+Copyright (c) 2024-2025 hyperpolymath
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,81 +33,59 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-═══════════════════════════════════════════════════════════════════════════════
-OPTION 2: GNU AFFERO GENERAL PUBLIC LICENSE v3.0 OR LATER
-═══════════════════════════════════════════════════════════════════════════════
+--------------------------------------------------------------------------------
+GNU AFFERO GENERAL PUBLIC LICENSE v3.0 OR LATER
+--------------------------------------------------------------------------------
 
-Copyright (c) 2025 vext contributors
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
 
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+The full text of the AGPL-3.0 is available at:
+  https://www.gnu.org/licenses/agpl-3.0.txt
 
-Network Use Provision: If you run a modified version of this software as a
-network service, you must make the complete source code of your modified
-version available to users of that service, as required by the AGPL.
+--------------------------------------------------------------------------------
+CHOOSING YOUR LICENSE
+--------------------------------------------------------------------------------
 
-Full text of the GNU AGPL v3.0:
-https://www.gnu.org/licenses/agpl-3.0.txt
+You may choose to use this work under:
+  1. MIT License - Standard permissive open source license
+  2. AGPL-3.0-or-later - Copyleft license requiring source disclosure for
+     network services
 
-═══════════════════════════════════════════════════════════════════════════════
-CHOOSING A LICENSE
-═══════════════════════════════════════════════════════════════════════════════
+For most uses, MIT License provides maximum flexibility.
+For ensuring open source remains open (especially for SaaS/network services),
+AGPL-3.0-or-later provides stronger protections.
 
-When to choose MIT:
-  • You want maximum freedom for commercial use
-  • You're building proprietary extensions
-  • You prefer minimal legal complexity
-  • You don't need copyleft protection
+================================================================================
+PALIMPSEST PHILOSOPHICAL OVERLAY (NON-BINDING)
+================================================================================
 
-When to choose AGPL-3.0-or-later:
-  • You're running this as a network service
-  • You want to ensure modifications remain open source
-  • You support strong copyleft principles
-  • You need network use source disclosure
+This project encourages (but does not legally require) adherence to the
+principles of the Palimpsest License - a framework for consent-based digital
+interaction and the future web.
 
-For compliance questions, see: docs/licensing/PALIMPSEST_FAQ.md
+Core Principles (Encouraged):
+  - Respect for emotional and creative lineage
+  - Transparent AI training practices with explicit consent
+  - Preservation of metadata and attribution
+  - Protection of narrative intent and cultural context
 
-═══════════════════════════════════════════════════════════════════════════════
-THIRD-PARTY COMPONENTS
-═══════════════════════════════════════════════════════════════════════════════
+The Palimpsest principles represent our vision for a consent-based internet.
+While not legally binding for use of this software, we encourage all users
+and contributors to familiarize themselves with these principles.
 
-This software may include components under different licenses. See the
-THIRD_PARTY_LICENSES file for details.
+Learn more: https://github.com/hyperpolymath/palimpsest-license
 
-═══════════════════════════════════════════════════════════════════════════════
-PATENT GRANTS
-═══════════════════════════════════════════════════════════════════════════════
-
-Contributors to this project grant a license to any patent claims they may have
-that are necessarily infringed by the software, under the same terms as the
-license you choose (MIT or AGPL-3.0-or-later).
-
-═══════════════════════════════════════════════════════════════════════════════
-TRADEMARK NOTICE
-═══════════════════════════════════════════════════════════════════════════════
-
-The "vext" name and logo are trademarks. Use of these trademarks is subject to
-our trademark policy. See TRADEMARK.md for details.
-
-═══════════════════════════════════════════════════════════════════════════════
-CONTACT
-═══════════════════════════════════════════════════════════════════════════════
-
-License questions: legal@vext.dev
-Security issues: security@vext.dev (see SECURITY.md)
-General inquiries: hello@vext.dev
-
-═══════════════════════════════════════════════════════════════════════════════
-Palimpsest Dual License v0.8
-https://palimpsest.license/
-═══════════════════════════════════════════════════════════════════════════════
+================================================================================
+END OF LICENSE
+================================================================================
