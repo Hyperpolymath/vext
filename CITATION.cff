@@ -7,10 +7,20 @@ title: "vext"
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - family-names: "Polymath"
-    given-names: "Hyper"
+  - family-names: "Jewell"
+    given-names: "Jonathan D.A."
+    alias: "hyperpolymath"
     email: "hyperpolymath@proton.me"
     affiliation: "Rhodium Standard / Independent Researcher"
+# Original inspiration
+references:
+  - type: software
+    title: "irker"
+    authors:
+      - family-names: "Raymond"
+        given-names: "Eric S."
+    url: "http://www.catb.org/~esr/irker/"
+    notes: "vext is a modernized Rust rewrite inspired by irker"
 repository-code: "https://github.com/hyperpolymath/vext"
 url: "https://rhodium.sh/projects/vext"
 abstract: "Documentation-first project with complete infrastructure, zero implementation
