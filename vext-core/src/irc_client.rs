@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio::time::timeout;
@@ -74,7 +74,7 @@ pub struct IrcConnection {
     /// Channels we've joined
     pub channels: HashSet<String>,
     /// Write half of the connection
-    writer: Arc<Mutex<Box<dyn AsyncWriteExt + Send + Unpin>>>,
+    writer: Arc<Mutex<Box<dyn AsyncWrite + Send + Unpin>>>,
     /// Rate limiter
     rate_limiter: Arc<Mutex<RateLimiter>>,
     /// Last activity time
@@ -102,7 +102,7 @@ impl IrcConnection {
             .map_err(|_| VextError::Timeout(format!("Connection to {} timed out", addr)))?
             .map_err(|e| VextError::Connection(e.to_string()))?;
 
-        let writer: Box<dyn AsyncWriteExt + Send + Unpin> = if tls {
+        let writer: Box<dyn AsyncWrite + Send + Unpin> = if tls {
             let connector = native_tls::TlsConnector::builder()
                 .build()
                 .map_err(|e| VextError::Tls(e.to_string()))?;
