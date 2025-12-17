@@ -6,7 +6,7 @@
 
 vext (Rhodium Standard Edition of irker) takes security seriously. This document outlines our security policies, vulnerability disclosure process, and supported versions.
 
-## 📋 Supported Versions
+## Supported Versions
 
 We provide security updates for the following versions:
 
@@ -38,9 +38,9 @@ vext implements multiple layers of security:
 - **Audit Trail**: Comprehensive security event logging
 
 ### Code Security
-- **Memory Safety**: Python's built-in memory safety
+- **Memory Safety**: Rust's compile-time memory safety guarantees
 - **Dependency Minimalism**: Minimal external dependencies
-- **Static Analysis**: Automated security scanning (bandit, semgrep)
+- **Static Analysis**: Automated security scanning (cargo-audit, clippy, semgrep)
 - **Code Review**: All changes reviewed before merge
 
 ## 🔍 Vulnerability Disclosure
@@ -52,8 +52,9 @@ vext implements multiple layers of security:
 Instead, please report security issues privately:
 
 **Primary Contact:**
-- Email: security@vext.dev (PGP: 0x1234567890ABCDEF)
+- Email: security@vext.dev
 - Response time: Within 48 hours
+- PGP key available at: `.well-known/pgp-key.txt` (when published)
 
 **Alternative Contacts:**
 - security.txt: See `.well-known/security.txt` (RFC 9116 compliant)
@@ -138,13 +139,13 @@ We do not currently offer monetary bug bounties, but we deeply value and acknowl
 6. **Static Analysis**: Run security scanners before commits
 7. **Secure Defaults**: Configuration defaults should be secure
 
-## 🔐 Cryptographic Disclosure
+## Cryptographic Disclosure
 
 vext does not implement custom cryptography. When encryption is needed:
 
-- **TLS/SSL**: Uses Python's `ssl` module (OpenSSL)
-- **Random Numbers**: Uses `secrets` module for CSPRNG
-- **Hashing**: Uses `hashlib` for non-cryptographic hashing
+- **TLS/SSL**: Uses Rust's `native-tls` crate (OpenSSL/Security.framework)
+- **Random Numbers**: Uses `rand` crate with system CSPRNG
+- **Hashing**: Uses standard library hashing for non-cryptographic purposes
 
 ## 📜 Compliance
 
@@ -167,7 +168,7 @@ vext follows these security standards:
 
 - **Security Team**: security@vext.dev
 - **Security.txt**: `.well-known/security.txt`
-- **PGP Fingerprint**: 1234 5678 90AB CDEF 1234 5678 90AB CDEF 1234 5678
+- **PGP Key**: To be published at `.well-known/pgp-key.txt` (generation pending)
 - **Expires**: See `.well-known/security.txt` for current expiration
 
 ## 📄 Security Audit History

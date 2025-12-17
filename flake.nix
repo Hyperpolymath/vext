@@ -4,52 +4,52 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
 
-        # Python environment with dependencies
-        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
-          # Core dependencies (if any beyond stdlib)
-          # vext uses mostly stdlib, minimal external deps
+        # Rust toolchain
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rust-analyzer" ];
+        };
 
-          # Development dependencies
-          pytest
-          pytest-cov
-          pytest-watch
-          black
-          flake8
-          pylint
-          mypy
-          bandit
-          safety
-        ]);
-
-        # Build vext package
-        vext = pkgs.python3Packages.buildPythonPackage rec {
+        # Build vext-core package
+        vext = pkgs.rustPlatform.buildRustPackage rec {
           pname = "vext";
           version = "1.0.0";
 
           src = ./.;
 
-          propagatedBuildInputs = with pkgs.python3Packages; [
-            # Runtime dependencies (stdlib only for now)
+          cargoLock = {
+            lockFile = ./vext-core/Cargo.lock;
+            allowBuiltinFetchGit = true;
+          };
+
+          buildAndTestSubdir = "vext-core";
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
           ];
 
-          checkInputs = with pkgs.python3Packages; [
-            pytest
-            pytest-cov
+          buildInputs = with pkgs; [
+            openssl
+          ] ++ lib.optionals stdenv.isDarwin [
+            darwin.apple_sdk.frameworks.Security
+            darwin.apple_sdk.frameworks.SystemConfiguration
           ];
-
-          checkPhase = ''
-            pytest tests/ || true
-          '';
 
           meta = with pkgs.lib; {
-            description = "Rhodium Standard Edition of irker - IRC notifications for version control";
+            description = "Rhodium Standard Edition of irker - high-performance IRC notification daemon";
             homepage = "https://github.com/Hyperpolymath/vext";
             license = with licenses; [ mit agpl3Plus ]; # Palimpsest dual license
             maintainers = [ ];
@@ -68,66 +68,71 @@
         # Development shell
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Python environment
-            pythonEnv
+            # Rust toolchain
+            rustToolchain
+            pkg-config
+            openssl
 
             # Build tools
             just
             git
+            cargo-deb
+            cargo-rpm
 
             # Documentation tools
             pandoc
+            asciidoctor
 
             # Linting and formatting
             nodePackages.markdownlint-cli
             shellcheck
+            clippy
 
             # Nix tools
             nixpkgs-fmt
             nil  # Nix LSP
+
+            # Deno for hook scripts
+            deno
+          ] ++ lib.optionals stdenv.isDarwin [
+            darwin.apple_sdk.frameworks.Security
+            darwin.apple_sdk.frameworks.SystemConfiguration
           ];
 
           shellHook = ''
-            echo "🚀 vext development environment"
+            echo "vext development environment"
             echo "   Version: ${vext.version}"
             echo ""
             echo "Available commands:"
             echo "  just --list    Show all available tasks"
-            echo "  just setup     Set up Python virtual environment"
+            echo "  just build     Build vext-core"
             echo "  just test      Run tests"
             echo "  just lint      Run linters"
             echo "  just rsr-check Check RSR compliance"
             echo ""
-            echo "Python: $(python --version)"
-            echo "Nix: $(nix --version | head -1)"
+            echo "Rust: $(rustc --version)"
+            echo "Cargo: $(cargo --version)"
             echo ""
-
-            # Set up Python virtual environment if it doesn't exist
-            if [ ! -d "venv" ]; then
-              echo "Creating Python virtual environment..."
-              python -m venv venv
-            fi
-
-            # Activate virtual environment
-            source venv/bin/activate 2>/dev/null || true
           '';
+
+          RUST_BACKTRACE = 1;
         };
 
         # Apps
         apps = {
           default = {
             type = "app";
-            program = "${vext}/bin/irkerd";
+            program = "${vext}/bin/vextd";
           };
 
-          irkerd = {
+          vextd = {
             type = "app";
-            program = "${vext}/bin/irkerd";
+            program = "${vext}/bin/vextd";
           };
 
-          irkerhook = {
+          vext-send = {
             type = "app";
-            program = "${vext}/bin/irkerhook";
+            program = "${vext}/bin/vext-send";
           };
         };
 
@@ -145,24 +150,30 @@
             touch $out
           '';
 
-          # Python tests
-          pytest = pkgs.runCommand "pytest" { buildInputs = [ pythonEnv ]; } ''
-            cd ${./.}
-            pytest tests/ || true
+          # Rust tests
+          cargo-test = pkgs.runCommand "cargo-test" {
+            buildInputs = [ rustToolchain pkgs.pkg-config pkgs.openssl ];
+          } ''
+            cd ${./.}/vext-core
+            cargo test || true
             touch $out
           '';
 
-          # Linting
-          pylint = pkgs.runCommand "pylint" { buildInputs = [ pythonEnv ]; } ''
-            cd ${./.}
-            pylint vext/ --rcfile=.pylintrc || true
+          # Clippy linting
+          clippy = pkgs.runCommand "clippy" {
+            buildInputs = [ rustToolchain pkgs.pkg-config pkgs.openssl ];
+          } ''
+            cd ${./.}/vext-core
+            cargo clippy -- -D warnings || true
             touch $out
           '';
 
-          # RSR compliance
-          rsr-compliance = pkgs.runCommand "rsr-compliance" { buildInputs = [ pythonEnv ]; } ''
+          # RSR compliance (using legacy Python checker)
+          rsr-compliance = pkgs.runCommand "rsr-compliance" {
+            buildInputs = [ pkgs.python3 ];
+          } ''
             cd ${./.}
-            python tools/rsr_checker.py . || true
+            python3 tools/rsr_checker.py . || true
             touch $out
           '';
         };
@@ -209,8 +220,8 @@
             };
 
             logLevel = mkOption {
-              type = types.enum [ "DEBUG" "INFO" "WARNING" "ERROR" "CRITICAL" ];
-              default = "INFO";
+              type = types.enum [ "trace" "debug" "info" "warn" "error" ];
+              default = "info";
               description = "Logging level";
             };
 
@@ -229,7 +240,7 @@
 
               serviceConfig = {
                 Type = "simple";
-                ExecStart = "${cfg.package}/bin/irkerd --host ${cfg.host} --port ${toString cfg.port} --loglevel ${cfg.logLevel}";
+                ExecStart = "${cfg.package}/bin/vextd --host ${cfg.host} --port ${toString cfg.port} --log-level ${cfg.logLevel}";
                 Restart = "on-failure";
                 RestartSec = "10s";
 

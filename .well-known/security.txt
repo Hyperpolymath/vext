@@ -13,7 +13,7 @@ Acknowledgments: https://github.com/Hyperpolymath/vext/blob/main/SECURITY_CREDIT
 
 # Security Team
 # Lead: security@vext.dev
-# PGP Fingerprint: 1234 5678 90AB CDEF 1234  5678 90AB CDEF 1234 5678
+# PGP Fingerprint: (To be generated - see SECURITY.md for contact setup)
 
 # Response Times
 # Critical: 24 hours
