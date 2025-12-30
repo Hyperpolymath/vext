@@ -41,9 +41,10 @@ clap = { version = "4.4", features = ["derive", "env"] }
 thiserror = "1.0"
 anyhow = "1.0"
 
-# TLS support
+# TLS support (use vendored OpenSSL for cross-compilation)
 native-tls = "0.2"
 tokio-native-tls = "0.3"
+openssl-sys = { version = "0.9", features = ["vendored"] }
 
 # DNS resolution (SRV records)
 trust-dns-resolver = "0.23"
