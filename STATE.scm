@@ -21,40 +21,45 @@
       (docs "AsciiDoc" "Markdown")))
 
   (current-position
-    (phase "pre-release")
-    (overall-completion 85)
+    (phase "release-candidate")
+    (overall-completion 98)
     (components
       (vext-core
-        (status "functional")
-        (completion 90)
+        (status "complete")
+        (completion 100)
         (tests 22)
-        (warnings 29))
+        (warnings 0))
       (vext-tools
-        (status "needs-migration")
-        (completion 70)
-        (note "TypeScript→ReScript migration pending"))
+        (status "complete")
+        (completion 100)
+        (note "Migrated to ReScript"))
       (documentation
         (status "complete")
-        (completion 95))
+        (completion 100))
       (ci-cd
-        (status "needs-fixes")
-        (completion 75)))
+        (status "complete")
+        (completion 100)
+        (note "All workflows SHA-pinned")))
     (working-features
       "IRC connection pooling"
       "UDP notification listener"
       "Rate limiting"
       "TLS support"
       "Multi-channel broadcasting"
-      "Git hook integration"))
+      "Git hook integration"
+      "ReScript tooling"
+      "Nickel configuration"))
 
   (route-to-mvp
     (milestone "1.0.0-rc1"
       (items
-        (item "Convert vext-tools TypeScript to ReScript" pending)
-        (item "Create Nickel configuration" pending)
-        (item "Add man pages" pending)
-        (item "Create .well-known directory" pending)
-        (item "Fix Rust warnings" pending)))
+        (item "Convert vext-tools TypeScript to ReScript" completed)
+        (item "Create Nickel configuration" completed)
+        (item "Add man pages" completed)
+        (item "Create .well-known directory" completed)
+        (item "Fix Rust warnings" completed)
+        (item "SHA-pin all workflow actions" completed)
+        (item "Create 6 SCM files" completed)))
     (milestone "1.0.0"
       (items
         (item "Release binaries" pending)
@@ -63,33 +68,35 @@
 
   (blockers-and-issues
     (critical)
-    (high
-      (issue "TypeScript in vext-tools violates RSR language policy"))
-    (medium
-      (issue "29 Rust compiler warnings (unused code)")
-      (issue "Missing SCM files")
-      (issue "Missing .well-known directory"))
+    (high)
+    (medium)
     (low
-      (issue "No fuzzing integration")))
+      (issue "No fuzzing integration")
+      (issue "Ada TUI not yet implemented")))
 
   (critical-next-actions
     (immediate
-      "Create all 6 SCM files"
-      "Create .well-known directory"
-      "Convert TypeScript to ReScript")
+      "Tag v1.0.0-rc1 release")
     (this-week
-      "Add man pages"
-      "Create Nickel configuration"
-      "Fix Rust warnings")
+      "Test release workflow"
+      "Publish container image")
     (this-month
-      "Release 1.0.0-rc1"
+      "Release 1.0.0"
       "Set up fuzzing"))
 
   (session-history
-    (snapshot "2025-12-30"
+    (snapshot "2025-12-30T23:00"
       (accomplishments
-        "Ran full test suite (22 tests pass)"
-        "Built release binary"
-        "Deleted python-ci.yml workflow"
-        "Fixed CodeQL configuration"
-        "Identified all missing files"))))
+        "Comprehensive RSR compliance update"
+        "Converted TypeScript to ReScript"
+        "Created all 6 SCM files"
+        "Created .well-known directory"
+        "Added man pages (vextd.1, vext-send.1)"
+        "Created Mustfile with cookbook"
+        "Created Nickel configuration"
+        "Updated Containerfile for podman"
+        "SHA-pinned all 18 workflow files"
+        "Fixed all Rust compiler warnings"
+        "Fixed all clippy warnings"
+        "All 22 tests passing"
+        "Zero warnings in build"))))
