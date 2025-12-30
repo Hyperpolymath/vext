@@ -84,10 +84,10 @@ impl IrcTarget {
     /// - ircs://server/channel (TLS)
     /// - irc://server/channel?key=secret
     pub fn parse(url: &str) -> Option<Self> {
-        let (tls, rest) = if url.starts_with("ircs://") {
-            (true, &url[7..])
-        } else if url.starts_with("irc://") {
-            (false, &url[6..])
+        let (tls, rest) = if let Some(rest) = url.strip_prefix("ircs://") {
+            (true, rest)
+        } else if let Some(rest) = url.strip_prefix("irc://") {
+            (false, rest)
         } else {
             return None;
         };

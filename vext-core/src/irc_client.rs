@@ -152,8 +152,8 @@ impl IrcConnection {
         writer
             .write_all(line.as_bytes())
             .await
-            .map_err(|e| VextError::Network(e))?;
-        writer.flush().await.map_err(|e| VextError::Network(e))?;
+            .map_err(VextError::Network)?;
+        writer.flush().await.map_err(VextError::Network)?;
         Ok(())
     }
 
