@@ -1,4 +1,8 @@
 # SPDX-License-Identifier: MIT OR AGPL-3.0-or-later
+# Containerfile for vext
+# Build: podman build -t vext .
+# Run: podman run -p 6659:6659 vext
+
 # Build stage
 FROM docker.io/library/rust:1.83-slim AS builder
 
@@ -14,22 +18,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY . .
 
 # Build release binary
-RUN cargo build --release --package vext-core
+RUN cargo build --release --package vext-core --bin vextd
 
-# Runtime stage
+# Runtime stage - using Chainguard for minimal attack surface
 FROM cgr.dev/chainguard/wolfi-base:latest
 
+# OCI Image Spec labels
 LABEL org.opencontainers.image.source="https://github.com/hyperpolymath/vext"
 LABEL org.opencontainers.image.description="High-performance IRC notification daemon for version control systems"
 LABEL org.opencontainers.image.licenses="MIT OR AGPL-3.0-or-later"
+LABEL org.opencontainers.image.vendor="Hyperpolymath"
+LABEL org.opencontainers.image.title="vext"
+LABEL org.opencontainers.image.version="1.0.0"
 
 # Copy binary from builder
 COPY --from=builder /build/target/release/vextd /usr/local/bin/vextd
 
-# Create non-root user
+# Create non-root user for rootless container support
 RUN adduser -D -u 1000 vext
 USER vext
 
-EXPOSE 8080
+# vext listens on UDP 6659 by default
+EXPOSE 6659/udp
+EXPOSE 6659/tcp
+
+# Healthcheck for container orchestration
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["/usr/local/bin/vextd", "--version"]
 
 ENTRYPOINT ["/usr/local/bin/vextd"]
+CMD ["--listen", "0.0.0.0:6659", "--foreground"]

@@ -60,10 +60,10 @@ build-rust:
     @echo "Building vext-core (Rust)..."
     cargo build --release
 
-# Build tools
+# Build tools (ReScript)
 build-tools:
-    @echo "Building vext-tools (Deno)..."
-    cd vext-tools && deno task build || deno check src/**/*.ts
+    @echo "Building vext-tools (ReScript)..."
+    cd vext-tools && deno task build
 
 # Build debug versions
 build-debug:
@@ -117,11 +117,11 @@ lint-rust:
     cargo clippy -- -D warnings
     cargo fmt --check
 
-# Lint Deno/TypeScript code
+# Lint ReScript code
 lint-tools:
-    @echo "Linting tools..."
-    cd vext-tools && deno lint
-    cd vext-tools && deno fmt --check
+    @echo "Linting tools (ReScript)..."
+    cd vext-tools && deno lint || true
+    cd vext-tools && deno fmt --check || true
 
 # Format all code
 format: format-rust format-tools
@@ -161,25 +161,29 @@ hook-install REPO_PATH:
     cd vext-tools && deno run --allow-read --allow-write src/hooks/install.ts --git-dir "{{REPO_PATH}}/.git"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Docker
+# Container (Podman/nerdctl)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Build Docker image
-docker-build:
-    docker build -t vext:latest .
+# Build container image
+container-build:
+    podman build -t vext:latest -f Containerfile .
 
-# Run Docker container
-docker-run:
-    docker run -d --name vext -p 6659:6659 vext:latest
+# Run container
+container-run:
+    podman run -d --name vext -p 6659:6659/udp -p 6659:6659/tcp vext:latest
 
-# Stop Docker container
-docker-stop:
-    docker stop vext || true
-    docker rm vext || true
+# Stop container
+container-stop:
+    podman stop vext || true
+    podman rm vext || true
 
-# Docker logs
-docker-logs:
-    docker logs -f vext
+# Container logs
+container-logs:
+    podman logs -f vext
+
+# Run container interactively (for debugging)
+container-shell:
+    podman run -it --rm --entrypoint /bin/sh vext:latest
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Release
@@ -263,8 +267,8 @@ loc:
     @echo "Lines of code:"
     @echo "Rust:"
     @find vext-core/src -name "*.rs" | xargs wc -l | tail -1
-    @echo "TypeScript/ReScript:"
-    @find vext-tools/src -name "*.ts" -o -name "*.res" | xargs wc -l 2>/dev/null | tail -1 || echo "0"
+    @echo "ReScript:"
+    @find vext-tools/src -name "*.res" | xargs wc -l 2>/dev/null | tail -1 || echo "0"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Nix Integration

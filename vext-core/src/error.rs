@@ -5,6 +5,7 @@ use thiserror::Error;
 
 /// Main error type for vext operations
 #[derive(Error, Debug)]
+#[allow(dead_code)]
 pub enum VextError {
     /// IRC connection error
     #[error("IRC connection error: {0}")]

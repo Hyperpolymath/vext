@@ -106,6 +106,7 @@ impl Config {
     }
 
     /// Save configuration to a TOML file
+    #[allow(dead_code)]
     pub fn to_file(&self, path: &Path) -> Result<()> {
         let content = toml::to_string_pretty(self)?;
         std::fs::write(path, content)?;

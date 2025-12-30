@@ -7,17 +7,15 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
-use tokio::io::{AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio::time::timeout;
 use tokio_native_tls::TlsConnector;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
 use crate::config::Config;
 use crate::error::{VextError, VextResult};
-use crate::protocol::IrcTarget;
 
 /// Rate limiter for IRC messages
 pub struct RateLimiter {
@@ -62,6 +60,7 @@ impl RateLimiter {
 }
 
 /// An active IRC connection
+#[allow(dead_code)]
 pub struct IrcConnection {
     /// Server hostname
     pub server: String,
@@ -203,12 +202,14 @@ impl IrcConnection {
     }
 
     /// Send a NOTICE to a channel
+    #[allow(dead_code)]
     pub async fn notice(&self, target: &str, message: &str) -> VextResult<()> {
         self.send_raw(&format!("NOTICE {} :{}", target, message))
             .await
     }
 
     /// Part from a channel
+    #[allow(dead_code)]
     pub async fn part(&mut self, channel: &str, reason: Option<&str>) -> VextResult<()> {
         let cmd = if let Some(r) = reason {
             format!("PART {} :{}", channel, r)
@@ -233,6 +234,7 @@ impl IrcConnection {
     }
 
     /// Respond to PING
+    #[allow(dead_code)]
     pub async fn pong(&self, token: &str) -> VextResult<()> {
         self.send_raw(&format!("PONG :{}", token)).await
     }

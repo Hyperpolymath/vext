@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT OR AGPL-3.0-or-later
 //! Integration tests for vext-core
 
-use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::time::Duration;
-
 /// Test notification JSON parsing
 #[test]
 fn test_notification_parsing() {

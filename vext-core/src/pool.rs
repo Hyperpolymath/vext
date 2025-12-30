@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
@@ -17,6 +16,7 @@ use crate::irc_client::{generate_nick, IrcConnection};
 use crate::protocol::IrcTarget;
 
 /// Connection pool entry for a server
+#[allow(dead_code)]
 struct ServerPool {
     /// Active connections
     connections: Vec<Arc<Mutex<IrcConnection>>>,
@@ -33,6 +33,7 @@ impl ServerPool {
     }
 
     /// Get next connection using round-robin
+    #[allow(dead_code)]
     fn next_connection(&mut self) -> Option<Arc<Mutex<IrcConnection>>> {
         if self.connections.is_empty() {
             return None;
@@ -84,7 +85,7 @@ impl ConnectionPool {
         // Check if we can create a new connection
         if pool.connections.len() >= self.config.max_connections {
             // Try to reap dead connections
-            pool.connections.retain(|c| {
+            pool.connections.retain(|_conn| {
                 // This is a sync check, actual health check needs the connection
                 true // Keep for now, will be checked on use
             });
@@ -172,6 +173,7 @@ impl ConnectionPool {
     }
 
     /// Gracefully shutdown all connections
+    #[allow(dead_code)]
     pub async fn shutdown(&mut self) {
         info!("Shutting down connection pool");
         for (server, pool) in &mut self.pools {
@@ -186,6 +188,7 @@ impl ConnectionPool {
     }
 
     /// Get statistics about the pool
+    #[allow(dead_code)]
     pub fn stats(&self) -> PoolStats {
         let mut total_connections = 0;
         let mut servers = Vec::new();
@@ -204,6 +207,7 @@ impl ConnectionPool {
 
 /// Pool statistics
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PoolStats {
     pub total_connections: usize,
     pub servers: Vec<String>,

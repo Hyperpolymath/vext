@@ -13,10 +13,10 @@
       "in-source": true
     }
   ],
-  "suffix": ".mjs",
-  "bs-dependencies": [],
+  "suffix": ".res.mjs",
+  "bs-dependencies": ["@rescript/core"],
   "warnings": {
     "error": "+101"
   },
-  "bsc-flags": ["-open Belt"]
+  "bsc-flags": ["-open RescriptCore"]
 }
