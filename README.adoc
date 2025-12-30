@@ -1,12 +1,12 @@
-= vext - Rhodium Standard Edition
+= vext - the high-performance IRC notification daemon for version control systems
 :toc: macro
 :toc-title: Contents
 :sectnums:
 
-image:https://img.shields.io/badge/rust-1.70+-orange.svg[Rust 1.70+]
-image:https://img.shields.io/badge/deno-1.40+-blue.svg[Deno 1.40+]
+image:[Rust 1.70+]
+image:[Deno 1.40+]
 image:https://img.shields.io/badge/license-MIT%20OR%20AGPL--3.0--or--later-green.svg[License]
-image:https://img.shields.io/badge/RSR-Silver-silver.svg[RSR Compliance]
+image:[RSR Compliance]
 
 == Overview
 
